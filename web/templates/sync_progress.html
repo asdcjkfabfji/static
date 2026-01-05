@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="box box-primary">
+    <div class="box-header with-border">
+        <h3 class="box-title">Sinxronizatsiya jarayoni</h3>
+    </div>
+    <div class="box-body text-center">
+        <div id="progress-text" style="font-size: 20px; margin-bottom: 20px;">Ulanmoqda...</div>
+        <div class="progress progress-striped active">
+            <div id="progress-bar" class="progress-bar progress-bar-primary" style="width: 0%"></div>
+        </div>
+        <a href="/" id="back-btn" class="btn btn-success" style="display:none;">Asosiy sahifaga qaytish</a>
+    </div>
+</div>
+
+<script>
+    const eventSource = new EventSource("/sync-stream");
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const backBtn = document.getElementById('back-btn');
+
+    eventSource.onmessage = function(event) {
+        const msg = event.data;
+        progressText.innerText = msg;
+
+        if (msg.includes("Yuklandi:")) {
+            const parts = msg.split(":")[1].split("/");
+            const current = parseInt(parts[0]);
+            const total = parseInt(parts[1]);
+            const percent = Math.round((current / total) * 100);
+            progressBar.style.width = percent + "%";
+        }
+
+        if (msg.includes("Tayyor:")) {
+            eventSource.close();
+            progressBar.style.width = "100%";
+            backBtn.style.display = "inline-block";
+        }
+    };
+
+    eventSource.onerror = function() {
+        progressText.innerText = "Xatolik yuz berdi yoki jarayon yakunlandi.";
+        eventSource.close();
+    };
+</script>
+{% endblock %}

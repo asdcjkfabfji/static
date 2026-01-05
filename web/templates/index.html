@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Statistika | HEMIS Talabalar Kontingenti</title>
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.18/css/AdminLTE.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.18/css/skins/skin-blue.min.css">
+
+  <style>
+    .table-bordered td, .table-bordered th { 
+        border: 1px solid #d2d6de !important; 
+        text-align: center; 
+        vertical-align: middle; 
+        font-size: 11px; 
+    }
+    .header-row { background-color: #3c8dbc; color: white; }
+    .sub-header { background-color: #f4f4f4; font-weight: bold; }
+    .shakl-section { border-left: 3px solid #00a65a; margin-bottom: 25px; padding-left: 10px; }
+    .shakl-title { 
+        background-color: #00a65a; color: white; padding: 4px 12px; 
+        display: inline-block; margin: 10px 0; border-radius: 4px; font-weight: bold; 
+    }
+    .stat-link { color: inherit; text-decoration: none; display: block; width: 100%; padding: 5px 0; transition: 0.2s; }
+    .stat-link:hover { background-color: rgba(60, 141, 188, 0.15); color: #3c8dbc; font-weight: bold; border-radius: 2px; }
+    .bg-grant { background-color: #e8f5e9 !important; }
+    .bg-contract { background-color: #fff3e0 !important; }
+    .bg-total { background-color: #e1f5fe !important; font-weight: bold; }
+    .nav-tabs-custom > .nav-tabs > li.active { border-top-color: #3c8dbc; }
+    .group-name-cell { text-align: left !important; padding-left: 8px !important; font-weight: bold; }
+    .gender-icons i { font-size: 65px; opacity: 0.3; }
+    .admin-controls { margin-right: 10px; display: inline-block; vertical-align: middle; }
+  </style>
+</head>
+<body class="hold-transition skin-blue layout-top-nav">
+<div class="wrapper">
+  
+  <header class="main-header">
+    <nav class="navbar navbar-static-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a href="{{ url_for('index') }}" class="navbar-brand"><b>HEMIS</b> Statistika</a>
+        </div>
+
+        <div class="navbar-custom-menu">
+          <ul class="nav navbar-nav">
+            <li class="user-menu">
+              <a href="#">
+                <i class="fa fa-user-circle"></i> 
+                <span class="hidden-xs">{{ current_user.id }} ({{ current_user.role }})</span>
+              </a>
+            </li>
+            {% if current_user.role == 'admin' %}
+            <li>
+              <a href="{{ url_for('manage_users') }}" class="bg-navy"><i class="fa fa-users"></i> Foydalanuvchilar</a>
+            </li>
+            {% endif %}
+            <li>
+              <a href="{{ url_for('logout') }}" class="text-red"><i class="fa fa-sign-out"></i> Chiqish</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="content-wrapper">
+    <section class="content-header">
+      <div class="row">
+        <div class="col-md-5">
+          <h1 style="margin: 0; font-weight: bold;">
+            <i class="fa fa-line-chart text-blue"></i> Talabalar Kontingenti 
+            <small>{{ selected_year }} o'quv yili</small>
+          </h1>
+        </div>
+        <div class="col-md-7 text-right">
+          {% if current_user.role == 'admin' %}
+          <div class="admin-controls">
+            <a href="{{ url_for('toggle_btn', key='sync_enabled') }}" class="btn btn-xs {{ 'btn-success' if settings.sync_enabled else 'btn-danger' }}" title="Yangilash tugmasini yoqish/o'chirish">
+                Sync: {{ 'ON' if settings.sync_enabled else 'OFF' }}
+            </a>
+            <a href="{{ url_for('toggle_btn', key='excel_enabled') }}" class="btn btn-xs {{ 'btn-success' if settings.excel_enabled else 'btn-danger' }}" title="Excel tugmasini yoqish/o'chirish">
+                Excel: {{ 'ON' if settings.excel_enabled else 'OFF' }}
+            </a>
+          </div>
+          {% endif %}
+
+          <form method="GET" class="form-inline" style="display: inline-block;">
+            <select name="year" onchange="this.form.submit()" class="form-control input-sm" style="border-radius: 3px;">
+              {% for y in years %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }} yil</option>
+              {% endfor %}
+            </select>
+
+            {% if settings.sync_enabled or current_user.role == 'admin' %}
+            <a href="{{ url_for('sync_stream') }}" class="btn btn-sm btn-primary btn-flat"><i class="fa fa-refresh"></i> Yangilash</a>
+            {% endif %}
+            
+            {% if settings.excel_enabled or current_user.role == 'admin' %}
+            <a href="{{ url_for('export', year=selected_year) }}" class="btn btn-sm btn-success btn-flat">
+              <i class="fa fa-file-excel-o"></i> Excel yuklash
+            </a>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="content">
+      <div class="row">
+        <div class="col-md-3 col-xs-6">
+          <div class="small-box bg-aqua">
+            <div class="inner"><h3>{{ global_stats.total }}</h3><p>Jami Talabalar</p></div>
+            <div class="icon"><i class="fa fa-users"></i></div>
+          </div>
+        </div>
+        <div class="col-md-3 col-xs-6">
+          <div class="small-box bg-green">
+            <div class="inner"><h3>{{ global_stats.grant }}</h3><p>Davlat Granti</p></div>
+            <div class="icon"><i class="fa fa-graduation-cap"></i></div>
+          </div>
+        </div>
+        <div class="col-md-3 col-xs-6">
+          <div class="small-box bg-yellow">
+            <div class="inner"><h3>{{ global_stats.contract }}</h3><p>Kontrakt</p></div>
+            <div class="icon"><i class="fa fa-file-text"></i></div>
+          </div>
+        </div>
+        <div class="col-md-3 col-xs-6">
+          <div class="small-box bg-maroon">
+            <div class="inner">
+              <h3 style="font-size: 28px;">{{ global_stats.male }} / {{ global_stats.female }}</h3>
+              <p>Erkaklar / Ayollar</p>
+            </div>
+            <div class="icon gender-icons" style="top: 5px;">
+              <i class="fa fa-male"></i><i class="fa fa-female" style="margin-left: -20px;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-tabs-custom">
+        <ul class="nav nav-tabs">
+          {% for fakultet in report_data.keys() %}
+            <li class="{% if loop.first %}active{% endif %}">
+              <a href="#tab_{{ loop.index }}" data-toggle="tab">
+                <i class="fa fa-university text-blue"></i> {{ fakultet }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+        
+        <div class="tab-content">
+          {% for fakultet, shakllar in report_data.items() %}
+            <div class="tab-pane {% if loop.first %}active{% endif %}" id="tab_{{ loop.index }}">
+              
+              {% for shakl, kurslar in shakllar.items() %}
+                <div class="shakl-section">
+                  <div class="shakl-title"><i class="fa fa-clock-o"></i> {{ shakl }}</div>
+                  
+                  <div class="box box-solid">
+                    <div class="box-body table-responsive no-padding">
+                      <table class="table table-bordered">
+                        <thead>
+                          <tr class="header-row">
+                            {% for k_nomi in all_courses %}
+                              <th colspan="7" style="border-right: 2px solid #fff !important;">{{ k_nomi }}-kurs</th>
+                            {% endfor %}
+                          </tr>
+                          <tr class="sub-header">
+                            {% for k_nomi in all_courses %}
+                              <th style="width: 20px;">t/r</th>
+                              <th style="width: 110px;">Guruh</th>
+                              <th class="bg-total">Jami</th>
+                              <th class="bg-grant">Grant</th>
+                              <th class="bg-contract">Kontr.</th>
+                              <th>O'g'il</th>
+                              <th style="border-right: 2px solid #ddd !important;">Qiz</th>
+                            {% endfor %}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% set ns = namespace(max=0) %}
+                          {% for k, g_list in kurslar.items() %}
+                            {% if g_list|length > ns.max %}{% set ns.max = g_list|length %}{% endif %}
+                          {% endfor %}
+                          
+                          {% for i in range(ns.max) %}
+                          <tr>
+                            {% for k_nomi in all_courses %}
+                              {% set g_list = kurslar.get(k_nomi, []) %}
+                              {% if i < g_list|length %}
+                                {% set g = g_list[i] %}
+                                <td>{{ i + 1 }}</td>
+                                <td class="group-name-cell">
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name) }}">{{ g.group_name }}</a>
+                                </td>
+                                <td class="bg-total">
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name) }}" class="stat-link">{{ g.jami }}</a>
+                                </td>
+                                <td class="bg-grant">
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name, type='grant') }}" class="stat-link text-green">{{ g.g_jami }}</a>
+                                </td>
+                                <td class="bg-contract">
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name, type='contract') }}" class="stat-link text-yellow">{{ g.k_jami }}</a>
+                                </td>
+                                <td>
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name, gender='Erkak') }}" class="stat-link text-blue">{{ g.u_o }}</a>
+                                </td>
+                                <td style="border-right: 2px solid #ddd !important;">
+                                  <a href="{{ url_for('group_detail', group_name=g.group_name, gender='Ayol') }}" class="stat-link text-maroon">{{ g.u_q }}</a>
+                                </td>
+                              {% else %}
+                                <td></td><td></td><td></td><td></td><td></td><td></td><td style="border-right: 2px solid #ddd !important;"></td>
+                              {% endif %}
+                            {% endfor %}
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.18/js/adminlte.min.js"></script>
+
+</body>
+</html>

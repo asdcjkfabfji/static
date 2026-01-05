@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Userlarni boshqarish</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.18/css/AdminLTE.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/admin-lte/2.4.18/css/skins/skin-blue.min.css">
+</head>
+<body class="hold-transition skin-blue layout-top-nav">
+<div class="wrapper">
+    <div class="content-wrapper">
+        <div class="container">
+            <section class="content-header">
+                <h1>Foydalanuvchilar <a href="/" class="btn btn-default btn-sm">Orqaga</a></h1>
+            </section>
+            <section class="content">
+                <div class="box box-primary">
+                    <div class="box-header with-border"><h3 class="box-title">Yangi foydalanuvchi</h3></div>
+                    <form method="POST" class="box-body">
+                        <div class="row">
+                            <div class="col-md-3"><input type="text" name="username" class="form-control" placeholder="Login" required></div>
+                            <div class="col-md-3"><input type="password" name="password" class="form-control" placeholder="Parol" required></div>
+                            <div class="col-md-3">
+                                <select name="role" class="form-control">
+                                    <option value="viewer">Viewer (Faqat ko'rish)</option>
+                                    <option value="admin">Admin (To'liq ruxsat)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3"><button type="submit" class="btn btn-primary btn-block">Qo'shish</button></div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="box">
+                    <div class="box-body no-padding">
+                        <table class="table table-striped">
+                            <tr><th>Username</th><th>Rol</th><th>Harakat</th></tr>
+                            {% for u in users %}
+                            <tr>
+                                <td>{{ u.username }}</td>
+                                <td><span class="label {{ 'label-danger' if u.role=='admin' else 'label-info' }}">{{ u.role }}</span></td>
+                                <td>
+                                    {% if u.username != 'admin' %}
+                                    <a href="/admin/delete_user/{{ u.username }}" class="text-red" onclick="return confirm('Ochirilsinmi?')">O'chirish</a>
+                                    {% else %} - {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+</body>
+</html>
